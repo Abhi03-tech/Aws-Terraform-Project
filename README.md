@@ -545,9 +545,141 @@ resource "aws_security_group" "alb_sg" {
 ## SG for servers in Private Subnet
 
 **resource "aws_security_group" "web_sg":** Creates a security group for the web servers.
+
 **vpc_id:** Associates the security group with the VPC.
+
 **ingress:** Defines inbound rules for the security group.
+
 **from_port:** Specifies the starting port (80 for HTTP, 22 for SSH).
+
 **to_port:** Specifies the ending port (80 for HTTP, 22 for SSH).
+
 **protocol:** Specifies the protocol (TCP)
-**security_groups:**: Allows http request from ALB & SSH from Bastion-host
+
+**security_groups:**: Allows http request from ALB & SSH from Bastion-host.
+
+
+# bastion.tf
+
+**Launch the Bastion-host instance**
+
+```hcl
+resource "aws_instance" "bastion" {
+  ami           = var.ami
+  instance_type = var.instance_type
+  subnet_id     = element(aws_subnet.public_subnet.*.id, 0)
+  key_name      = var.key_name
+
+  security_groups = [aws_security_group.bastion_sg.id]
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "bastion-host"
+  }
+}
+```
+### Explanation
+
+**resource "aws_instance" "bastion":** Creates a bastion host instance.
+
+**ami:** Specifies the AMI ID to use for the instance.
+
+**instance_type:** Specifies the instance type.
+
+**subnet_id:** Associates the instance with the first public subnet.
+
+**key_name:** Specifies the SSH key pair to use.
+
+**associate_public_ip_address:** Associates a public IP address with the instance.
+
+**security_groups:** Specifies the security group to associate with the instance.
+
+**tag:** Adds a tag to the instance with the name "bastion-host".
+
+# autoscaling.tf
+
+```hcl
+resource "aws_launch_template" "web_launch_template" {
+  name_prefix   = "web-server-"
+  image_id      = var.ami
+  instance_type = var.instance_type
+  key_name      = var.key_name
+
+  network_interfaces {
+    associate_public_ip_address = false
+    security_groups             = [aws_security_group.web_sg.id]
+  }
+
+  user_data = base64encode(<<EOF
+#!/bin/bash
+yum update -y
+yum install -y httpd
+echo 'Hello World from Terraform!' > /var/www/html/index.html
+systemctl start httpd
+systemctl enable httpd
+EOF
+  )
+}
+
+resource "aws_autoscaling_group" "web_asg" {
+  vpc_zone_identifier = aws_subnet.private_subnet.*.id
+  launch_template {
+    id      = aws_launch_template.web_launch_template.id
+    version = "$Latest"
+  }
+
+  min_size = 1
+  max_size = 3
+  desired_capacity = 2
+
+  tag {
+      key                 = "Name"
+      value               = "web-server"
+      propagate_at_launch = true
+    }
+}
+```
+
+### Explanation
+
+### for launch template
+
+**resource "aws_launch_template" "web_launch_template":** Creates a launch template for the web servers.
+
+**name_prefix:** Sets the name prefix for the launch template.
+
+**image_id:** Specifies the AMI ID to use for the instances.
+
+**instance_type:** Specifies the instance type.
+
+**key_name:** Specifies the SSH key pair to use.
+
+**network_interfaces:** Defines network interface settings.
+
+**associate_public_ip_address:** Disables public IP address assignment.
+
+**security_groups:** Associates the security groups with the instances.
+
+**user_data:** Specifies a user data script to run at instance launch (to install and start a web server).
+
+### for ASG
+
+**resource "aws_autoscaling_group" "web_asg":** Creates an Auto Scaling Group for the web servers.
+
+**vpc_zone_identifier:** Specifies the subnets for the Auto Scaling Group (private subnets).
+
+**launch_template:** Associates the launch template with the Auto Scaling Group.
+
+**id:** Specifies the ID of the launch template.
+
+**version:** Specifies the version of the launch template.
+
+**min_size:** Specifies the minimum number of instances.
+
+**max_size:** Specifies the maximum number of instances.
+
+**desired_capacity:** Specifies the desired number of instances.
+
+
+
+**tags:** Adds tags to the instances launched by the Auto Scaling Group.
