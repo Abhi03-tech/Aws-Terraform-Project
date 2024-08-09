@@ -818,10 +818,24 @@ terraform init
 ```bash
 terraform plan
 ```
-
 **It will create the blueprint of the infra i.e. to be deployed**
+
 
 ### Apply the changes to bring it in defined state,
 ```bash
 terraform apply
+```
+
+### If Infrastructure will be created successfully, it will give an output i.e. DNS of load balancer. copy it & paste in the browser & access the content served by server.
+
+![24](https://github.com/user-attachments/assets/8c54e9e5-fa18-4c2c-97d9-dc67c82784a0)
+
+![25](https://github.com/user-attachments/assets/116a5843-9278-424a-a5d8-86ff16157a51)
+
+### Now, everything is done!!
+
+### Now, destroy the infra using the following command.
+
+```bash
+terraform destroy
 ```
