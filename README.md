@@ -190,6 +190,7 @@ default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
 default: Sets the default key name to your-key-name.
 
 ### variable "instance_type": Defines the instance type to be used.
+
 default: Sets the default instance i.e. t2.micro
 
 **variable "ami": Defines the ami(amazon machine image)**.
@@ -208,6 +209,8 @@ resource "aws_vpc" "my_vpc" {
 
 ## Explanation
 **resource "aws_vpc" "my_vpc": Creates a VPC**.
+
 **cidr_block**: Sets the CIDR block for the VPC using the vpc_cidr variable.
+
 **tags**: Adds a tag to the VPC with the name "my-vpc".
 
