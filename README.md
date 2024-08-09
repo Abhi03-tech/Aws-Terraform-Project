@@ -255,6 +255,9 @@ resource "aws_subnet" "private_subnet" {
 ```
 
 ### Explanation
+
+**The data "aws_availability_zones" "available" resource in Terraform is used to fetch information about the availability zones in a specific AWS region. When you use this data source, Terraform retrieves the list of availability zones that are available for your AWS account in the selected region.**
+
 **resource "aws_subnet" "public_subnet"**: Creates public subnets.
 
 **count**: Creates multiple subnets based on the number of CIDR blocks defined in public_subnet_cidrs.
@@ -598,6 +601,8 @@ resource "aws_instance" "bastion" {
 
 # autoscaling.tf
 
+**First launch template will be created and using launch template ASG will launch servers in private subnets**
+
 ```hcl
 resource "aws_launch_template" "web_launch_template" {
   name_prefix   = "web-server-"
@@ -680,6 +685,143 @@ resource "aws_autoscaling_group" "web_asg" {
 
 **desired_capacity:** Specifies the desired number of instances.
 
-
-
 **tags:** Adds tags to the instances launched by the Auto Scaling Group.
+
+
+# loadbalancer.tf
+
+**loadbalancer will be created that receives the request from clients over internet using http protocol and maps the requests across private servers**
+
+```hcl
+resource "aws_lb" "web_lb" {
+  name               = "web-lb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = aws_subnet.public_subnet.*.id
+
+  tags = {
+    Name = "web-lb"
+  }
+}
+
+resource "aws_lb_target_group" "web_tg" {
+  name     = "web-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.my_vpc.id
+
+  health_check {
+    interval            = 30
+    path                = "/"
+  }
+
+  tags = {
+    Name = "web-tg"
+  }
+}
+
+resource "aws_lb_listener" "web_listener" {
+  load_balancer_arn = aws_lb.web_lb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.web_tg.arn
+  }
+}
+
+resource "aws_autoscaling_attachment" "asg_attachment" {
+  autoscaling_group_name = aws_autoscaling_group.web_asg.name
+  lb_target_group_arn    = aws_lb_target_group.web_tg.arn
+}
+```
+### Explanation for load balancer
+
+**resource "aws_lb" "web_lb":** Creates an Application Load Balancer.
+
+**name:** Sets the name of the load balancer.
+
+**internal:** Specifies if the load balancer is internal (false for public).
+
+**load_balancer_type:** Specifies the type of load balancer (application).
+
+**security_groups:** Associates the security groups with the load balancer.
+
+**subnets:** Specifies the subnets for the load balancer (public subnets).
+
+**tags:** Adds a tag to the load balancer with the name "web-lb".
+
+### Explanation for Target group
+
+**resource "aws_lb_target_group" "web_tg":** Creates a target group for the load balancer.
+
+**name:** Sets the name of the target group.
+
+**port:** Specifies the port for the target group (80 for HTTP).
+
+**protocol:** Specifies the protocol for the target group (HTTP).
+
+**vpc_id:** Associates the target group with the VPC.
+
+**health_check:** Configures health check settings for the target group.
+
+**path:** Sets the path for health checks ("/").
+
+**tags:** Adds a tag to the target group with the name "web-tg".
+
+### Explanation for listener
+
+**resource "aws_lb_listener" "web_listener":** Creates a listener for the load balancer.
+
+**load_balancer_arn:** Associates the listener with the load balancer.
+
+**port:** Specifies the port for the listener (80 for HTTP).
+
+**protocol:** Specifies the protocol for the listener (HTTP).
+
+**default_action:** Configures the default action for the listener.
+
+**type:** Sets the action type (forward).
+
+**target_group_arn:** Specifies the target group to forward traffic to.
+
+**resource "aws_autoscaling_attachment" "asg_attachment":** Attaches the Auto Scaling Group to the target group.
+
+**autoscaling_group_name:** Specifies the name of the Auto Scaling Group.
+
+**lb_target_group_arn:** Specifies the ARN of the target group.
+
+# outputs.tf
+
+**After Infrastructure provisioning, using this conf. file we will retieve the DNS of ALB and access the server from our using the DNS**
+
+```hcl
+output "alb_dns_name" {
+  description = "The DNS name of the ALB"
+  value       = aws_lb.web_lb.dns_name
+}
+```
+
+### Now configuration is done. Go back to the terminal and run the terraform commands for provisioning the infrastucture.
+
+### go to terminal, switch to project directory and run the command
+```bash
+terraform init
+```
+![22](https://github.com/user-attachments/assets/869b498d-3c09-4044-9f5b-905a7266ad8f)
+
+**It will parse the main.tf file & get to know about provider and download the provider aws**
+
+### Now, Run the command
+```bash
+terraform plan
+```
+
+**It will create the blueprint of the infra i.e. to be deployed**
+
+### Apply the changes to bring it in defined state,
+```bash
+terraform apply
+```
