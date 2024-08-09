@@ -176,6 +176,8 @@ variable "ami" {
   default = "ami-0a4408457f9a03be3"
 }
 ```
+## Explanation
+
 ### variable "aws_region": Defines the AWS region to deploy resources.
 default: Sets the default value to us-west-2.
 
@@ -217,6 +219,9 @@ resource "aws_vpc" "my_vpc" {
 **tags**: Adds a tag to the VPC with the name "my-vpc".
 
 # subnets.tf
+
+**Here, we create 2 public & 2 private subnets in vpc my-vpc**
+
 ```hcl
 data "aws_availability_zones" "available" {
   state = "available"
@@ -265,6 +270,9 @@ resource "aws_subnet" "private_subnet" {
 **resource "aws_subnet" "private_subnet"**: Creates private subnets.
 
 # internet_gateway.tf
+
+**Internet gateway helps clients over internet to come & connect to local server & server to go over the internet.**
+
 ```hcl
 resource "aws_internet_gateway" "my_igw" {
   vpc_id = aws_vpc.my_vpc.id
@@ -283,6 +291,9 @@ resource "aws_internet_gateway" "my_igw" {
 
 
 # nat_gateway.tf
+
+**Nat gateway helps servers in private subnet to go over internet. private subnets don't have public ips and these servers send request to nat gateway, nat masks the server ip and using its own public ip it send the server over internet.**
+
 ```hcl
 resource "aws_eip" "nat_eip" {
   count = length(var.private_subnet_cidrs)
@@ -322,6 +333,9 @@ resource "aws_nat_gateway" "my_natgw" {
 
 
 # route_tables.tf
+
+**public_rt will be connected with public subnets and associate the route to igw & private_rt will connect with private subnets and route will be associated with nat gw**
+
 ```hcl
 resource "aws_route_table" "public_rt" {
   vpc_id = aws_vpc.my_vpc.id
@@ -398,3 +412,142 @@ resource "aws_route_table_association" "private_rta" {
 
 **route_table_id**: Specifies the ID of the private route table.
 
+# security_groups.tf
+
+**Bastion-host**: As private servers don't have public Ips. so, we can't login to it directly. here bastion-host will help us. first we will ssh to bastion & from there, we can ssh to private server using its private Ip address. As all these servers are in same VPC so they can connect to each-other using private IP
+
+**Here, Bastion-host allow ssh from anywhere & it can anywhere over internet**.
+
+**servers in private subnet will only allow http request from ALB, ssh from bastion-host and it will go over internet via Nat GW**
+
+**ALB allows clients over internet using http protocol**
+
+```hcl
+# Security Group for the Bastion Host
+resource "aws_security_group" "bastion_sg" {
+  name        = "my-bastion-sg"
+  vpc_id      = aws_vpc.my_vpc.id
+
+  ingress {
+    description = "Allow SSH from anywhere"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "my-bastion-sg"
+  }
+}
+
+# Security Group for the Web Servers in the Private Subnet
+resource "aws_security_group" "web_sg" {
+  name        = "my-web-sg"
+  vpc_id      = aws_vpc.my_vpc.id
+
+  # Ingress rule to allow HTTP traffic from the ALB
+  ingress {
+    description = "Allow HTTP from ALB"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb_sg.id]
+  }
+
+  # Ingress rule to allow SSH traffic from the Bastion Host
+  ingress {
+    description = "Allow SSH from Bastion Host"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    security_groups = [aws_security_group.bastion_sg.id]
+  }
+
+  # Egress rule to allow outbound traffic through the NAT Gateway
+  egress {
+    description = "Allow outbound traffic via NAT Gateway"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "my-web-sg"
+  }
+}
+
+# Security Group for the ALB
+resource "aws_security_group" "alb_sg" {
+  name        = "my-alb-sg"
+  vpc_id      = aws_vpc.my_vpc.id
+
+  ingress {
+    description = "Allow HTTP traffic from the Internet"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "my-alb-sg"
+  }
+}
+```
+### Explanation
+
+## SG for Bastion-host
+
+**resource "aws_security_group" "bastion_sg"**: Creates a security group for the bastion host.
+
+**vpc_id:** Associates the security group with the VPC.
+
+**ingress:** Defines inbound rules for the security group.
+
+**from_port:** Specifies the starting port.
+
+**to_port:** Specifies the ending port.
+
+**protocol:** Specifies the protocol (TCP).
+
+**cidr_blocks:** Specifies the source IP ranges (allowing access from anywhere).
+
+**egress:** Defines outbound rules for the security group.
+
+**from_port:** Specifies the starting port (0).
+
+**to_port:** Specifies the ending port (0).
+
+**protocol:** Specifies the protocol (all protocols).
+
+**cidr_blocks:** Specifies the destination IP ranges (allowing access to anywhere).
+
+**tags:** Adds a tag to the security group with the name "bastion-sg".
+
+## SG for servers in Private Subnet
+
+**resource "aws_security_group" "web_sg":** Creates a security group for the web servers.
+**vpc_id:** Associates the security group with the VPC.
+**ingress:** Defines inbound rules for the security group.
+**from_port:** Specifies the starting port (80 for HTTP, 22 for SSH).
+**to_port:** Specifies the ending port (80 for HTTP, 22 for SSH).
+**protocol:** Specifies the protocol (TCP)
+**security_groups:**: Allows http request from ALB & SSH from Bastion-host
