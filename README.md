@@ -174,24 +174,24 @@ variable "ami" {
   default = "ami-0a4408457f9a03be3"
 }
 ```
-## variable "aws_region": Defines the AWS region to deploy resources.
-### default: Sets the default value to us-west-2.
+### variable "aws_region": Defines the AWS region to deploy resources.
+default: Sets the default value to us-west-2.
 
-## variable "vpc_cidr": Defines the CIDR block for the VPC.
-### default: Sets the default CIDR block to 10.0.0.0/16.
+### variable "vpc_cidr": Defines the CIDR block for the VPC.
+default: Sets the default CIDR block to 10.0.0.0/16.
 
-## variable "public_subnet_cidrs": Defines the CIDR blocks for the public subnets.
-### default: Sets the default CIDR blocks to ["10.0.1.0/24", "10.0.2.0/24"].
+### variable "public_subnet_cidrs": Defines the CIDR blocks for the public subnets.
+default: Sets the default CIDR blocks to ["10.0.1.0/24", "10.0.2.0/24"].
 
-## variable "private_subnet_cidrs": Defines the CIDR blocks for the private subnets.
-### default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
+### variable "private_subnet_cidrs": Defines the CIDR blocks for the private subnets.
+default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
 
-## variable "key_name": Defines the name of the SSH key pair to use for instances.
-### default: Sets the default key name to your-key-name.
+### variable "key_name": Defines the name of the SSH key pair to use for instances.
+default: Sets the default key name to your-key-name.
 
-## variable "instance_type": Defines the instance type to be used.
-### default: Sets the default instance i.e. t2.micro
+### variable "instance_type": Defines the instance type to be used.
+default: Sets the default instance i.e. t2.micro
 
-## variable "ami": Defines the ami(amazon machine image).
-### default: Sets the default Ami value
+### variable "ami": Defines the ami(amazon machine image).
+default: Sets the default Ami value
 
