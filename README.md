@@ -129,9 +129,9 @@ Click on users
 ![21](https://github.com/user-attachments/assets/5ad51583-9060-4c3b-802b-a16fb574e22f)
 
 
-## Working Environment is now ready.
+### Working Environment is now ready.
 
-## Now, we move towards writing the configuration file for our project. Here, we will break every AWS resource in different configuration files instead of writing all the codes in main.tf file. It will help us to document our project better.
+### Now, we move towards writing the configuration file for our project. Here, we will break every AWS resource in different configuration files instead of writing all the codes in main.tf file. It will help us to document our project better.
 
 
 # main.tf
@@ -140,7 +140,7 @@ Click on users
 provider "aws" {
   region = var.aws_region
 }
-
+```
 ## provider "aws": Configures the AWS provider and specifies the region to deploy resources.
 ## region = var.aws_region: Uses the aws_region variable defined in variables.tf to set the AWS region.
 
@@ -173,25 +173,25 @@ variable "instance_type" {
 variable "ami" {
   default = "ami-0a4408457f9a03be3"
 }
-
+```
 ## variable "aws_region": Defines the AWS region to deploy resources.
-default: Sets the default value to us-west-2.
+### default: Sets the default value to us-west-2.
 
 ## variable "vpc_cidr": Defines the CIDR block for the VPC.
-default: Sets the default CIDR block to 10.0.0.0/16.
+### default: Sets the default CIDR block to 10.0.0.0/16.
 
 ## variable "public_subnet_cidrs": Defines the CIDR blocks for the public subnets.
-default: Sets the default CIDR blocks to ["10.0.1.0/24", "10.0.2.0/24"].
+### default: Sets the default CIDR blocks to ["10.0.1.0/24", "10.0.2.0/24"].
 
 ## variable "private_subnet_cidrs": Defines the CIDR blocks for the private subnets.
-default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
+### default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
 
 ## variable "key_name": Defines the name of the SSH key pair to use for instances.
-default: Sets the default key name to your-key-name.
+### default: Sets the default key name to your-key-name.
 
 ## variable "instance_type": Defines the instance type to be used.
-default: Sets the default instance i.e. t2.micro
+### default: Sets the default instance i.e. t2.micro
 
 ## variable "ami": Defines the ami(amazon machine image).
-default: Sets the default Ami valu
+### default: Sets the default Ami value
 
