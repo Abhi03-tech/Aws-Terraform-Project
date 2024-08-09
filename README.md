@@ -92,12 +92,14 @@ Click on users
 
 ![14](https://github.com/user-attachments/assets/53ba14a9-7ab4-4715-83eb-2b4a12f5cd9d)
 
+## Setup the Profile in VS Code.
+
 
 ### Now, create a project directory and open it in VS code.
 
 ### before jumping into writing the configuration files for our project, complete some prerequisite like let our vs code know where our credentials are saved. so, we don't have to put our credentials in conf. file.
 
-**Click on Extensions & install AWS Toolkit**. In my case, it's installed.
+### Click on Extensions & install AWS Toolkit. In my case, it's installed.
 
 ![15](https://github.com/user-attachments/assets/ca0cceb7-8872-416a-9c07-c665404d7e66)
 
@@ -126,4 +128,16 @@ Click on users
 
 ![21](https://github.com/user-attachments/assets/5ad51583-9060-4c3b-802b-a16fb574e22f)
 
+
+##Working Environment is now ready.
+
+## Now, we move towards writing the configuration file for our project. Here, we will break every AWS resource in different configuration files instead of writing all the codes in main.tf file. It will help us to document our project better.
+
+
+# main.tf
+### Here, we will provide details about provider.
+```hcl
+provider "aws" {
+  region = var.aws_region
+}
 
