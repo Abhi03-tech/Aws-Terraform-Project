@@ -806,7 +806,9 @@ output "alb_dns_name" {
 
 ### Now configuration is done. Go back to the terminal and run the terraform commands for provisioning the infrastucture.
 
-### go to terminal, switch to project directory and run the command
+# Provision Infrastructure on AWS
+
+## go to terminal, switch to project directory and run the command
 ```bash
 terraform init
 ```
@@ -814,14 +816,14 @@ terraform init
 
 **It will parse the main.tf file & get to know about provider and download the provider aws**
 
-### Now, Run the command
+## Now, Run the command
 ```bash
 terraform plan
 ```
 **It will create the blueprint of the infra i.e. to be deployed**
 
 
-### Apply the changes to bring it in defined state,
+## Apply the changes to bring it in defined state,
 ```bash
 terraform apply
 ```
@@ -834,7 +836,7 @@ terraform apply
 
 ### Now, everything is done!!
 
-### Now, destroy the infra using the following command.
+## Destroy the infra using the following command.
 
 ```bash
 terraform destroy
