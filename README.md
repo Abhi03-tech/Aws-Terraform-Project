@@ -9,7 +9,8 @@ This project demonstrates an automated setup of a scalable and secure AWS infras
 The setup ensures that servers hosted in private subnets can access the internet securely via NAT, while clients connect to the service through an ALB. This infrastructure is designed for high availability, scalability, and security.
 
 # Architecture Diagram
-![VPC Project](https://github.com/user-attachments/assets/3684c48a-d642-4bd1-ad65-e4480fa9f325)
+
+![vpc png](https://github.com/user-attachments/assets/0ed7687d-f4ab-4f95-893a-eeaf942fff95)
 
 
 # Prerequisite
