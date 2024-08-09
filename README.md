@@ -141,8 +141,10 @@ provider "aws" {
   region = var.aws_region
 }
 ```
-### provider "aws": Configures the AWS provider and specifies the region to deploy resources.
-### region = var.aws_region: Uses the aws_region variable defined in variables.tf to set the AWS region.
+### Explanation
+**provider "aws"**: Configures the AWS provider and specifies the region to deploy resources.
+
+**region = var.aws_region**: Uses the aws_region variable defined in variables.tf to set the AWS region.
 
 # variables.tf
 ```hcl
@@ -190,10 +192,10 @@ default: Sets the default CIDR blocks to ["10.0.3.0/24", "10.0.4.0/24"].
 default: Sets the default key name to your-key-name.
 
 ### variable "instance_type": Defines the instance type to be used.
-
 default: Sets the default instance i.e. t2.micro
 
 **variable "ami": Defines the ami(amazon machine image)**.
+
 default: Sets the default Ami value
 
 # vpc.tf
@@ -213,4 +215,186 @@ resource "aws_vpc" "my_vpc" {
 **cidr_block**: Sets the CIDR block for the VPC using the vpc_cidr variable.
 
 **tags**: Adds a tag to the VPC with the name "my-vpc".
+
+# subnets.tf
+```hcl
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+resource "aws_subnet" "public_subnet" {
+  count = length(var.public_subnet_cidrs)
+
+  vpc_id                  = aws_vpc.my_vpc.id
+  cidr_block              = element(var.public_subnet_cidrs, count.index)
+  map_public_ip_on_launch = true
+  availability_zone       = element(data.aws_availability_zones.available.names, count.index)
+
+  tags = {
+    Name = "my-public-subnet-${count.index + 1}"
+  }
+}
+
+resource "aws_subnet" "private_subnet" {
+  count = length(var.private_subnet_cidrs)
+
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = element(var.private_subnet_cidrs, count.index)
+  map_public_ip_on_launch = false
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
+
+  tags = {
+    Name = "my-private-subnet-${count.index + 1}"
+  }
+}
+```
+
+### Explanation
+**resource "aws_subnet" "public_subnet"**: Creates public subnets.
+
+**count**: Creates multiple subnets based on the number of CIDR blocks defined in public_subnet_cidrs.
+
+**vpc_id**: Associates the subnet with the VPC created in vpc.tf.
+
+**cidr_block**: Sets the CIDR block for each subnet using the public_subnet_cidrs variable.
+
+**map_public_ip_on_launch**: Automatically assigns a public IP address to instances launched in the subnet.
+
+**tags**: Adds a tag to each subnet with a name that includes the index.
+
+**resource "aws_subnet" "private_subnet"**: Creates private subnets.
+
+# internet_gateway.tf
+```hcl
+resource "aws_internet_gateway" "my_igw" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  tags = {
+    Name = "my-igw"
+  }
+}
+```
+### Explanation
+**resource "aws_internet_gateway" "my_igw"**: Creates an Internet Gateway.
+
+**vpc_id**: Associates the Internet Gateway with the VPC created in vpc.tf.
+
+**tags**: Adds a tag to the Internet Gateway with the name "my-igw".
+
+
+# nat_gateway.tf
+```hcl
+resource "aws_eip" "nat_eip" {
+  count = length(var.private_subnet_cidrs)
+  domain = "vpc"
+
+  tags = {
+    Name = "my-nat-eip-${count.index + 1}"
+  }
+}
+
+resource "aws_nat_gateway" "my_natgw" {
+  count         = length(var.private_subnet_cidrs)
+  allocation_id = aws_eip.nat_eip[count.index].id
+  subnet_id     = element(aws_subnet.public_subnet.*.id, count.index)
+
+  tags = {
+    Name = "my-nat-gw-${count.index + 1}"
+  }
+}
+```
+
+### Explanation
+**resource "aws_eip" "nat_eip"**: Creates Elastic IP addresses for the NAT Gateways.
+
+**count**: Creates multiple Elastic IPs based on the number of public subnets.
+
+**resource "aws_nat_gateway" "my_natgw"**: Creates NAT Gateways.
+
+**count**: Creates multiple NAT Gateways based on the number of public subnets.
+
+**allocation_id**: Associates the NAT Gateway with the Elastic IP.
+
+**subnet_id**: Associates the NAT Gateway with the corresponding public subnet.
+
+**tags**: Adds a tag to each NAT Gateway with a name that includes the index.
+
+
+
+# route_tables.tf
+```hcl
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.my_igw.id
+  }
+
+  tags = {
+    Name = "public-rt"
+  }
+}
+
+resource "aws_route_table_association" "public_rta" {
+  count          = length(var.public_subnet_cidrs)
+  subnet_id      = aws_subnet.public_subnet[count.index].id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+resource "aws_route_table" "private_rt" {
+  count  = length(var.private_subnet_cidrs)
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = element(aws_nat_gateway.my_natgw.*.id, count.index % length(aws_nat_gateway.my_natgw))
+  }
+
+  tags = {
+    Name = "private-rt-${count.index + 1}"
+  }
+}
+
+resource "aws_route_table_association" "private_rta" {
+  count          = length(var.private_subnet_cidrs)
+  subnet_id      = aws_subnet.private_subnet[count.index].id
+  route_table_id = aws_route_table.private_rt[count.index].id
+}
+```
+
+### Explanation
+**resource "aws_route_table" "public_rt"**: Creates a route table for the public subnets.
+
+**vpc_id**: Associates the route table with the VPC.
+
+**route**: Adds a route to the route table that directs all outbound traffic (0.0.0.0/0) to the Internet Gateway.
+
+**tags**: Adds a tag to the route table with the name "public-rt".
+
+**resource "aws_route_table_association" "public_rta"**: Associates the public subnets with the public route table.
+
+**count**: Creates associations based on the number of public subnets.
+
+**subnet_id**: Associates each public subnet with the route table.
+
+**route_table_id**: Specifies the ID of the public route table.
+
+**resource "aws_route_table" "private_rt"**: Creates route tables for the private subnets.
+
+**count**: Creates multiple route tables based on the number of private subnets.
+
+**vpc_id**: Associates each route table with the VPC.
+
+**route**: Adds a route to each route table that directs all outbound traffic to the NAT Gateway.
+
+**tags**: Adds a tag to each route table with a name that includes the index.
+
+**resource "aws_route_table_association" "private_rta"**: Associates the private subnets with the private route tables.
+
+**count**: Creates associations based on the number of private subnets.
+
+**subnet_id**: Associates each private subnet with its respective route table.
+
+**route_table_id**: Specifies the ID of the private route table.
 
