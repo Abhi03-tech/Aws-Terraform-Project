@@ -8,3 +8,6 @@ This project demonstrates an automated setup of a scalable and secure AWS infras
 
 The setup ensures that servers hosted in private subnets can access the internet securely via NAT, while clients connect to the service through an ALB. This infrastructure is designed for high availability, scalability, and security.
 
+# Prerequisite
+1. Intermediate level knowledge of Aws, Terraform & Networking
+2. VS code editor
