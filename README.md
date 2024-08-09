@@ -141,8 +141,8 @@ provider "aws" {
   region = var.aws_region
 }
 ```
-## provider "aws": Configures the AWS provider and specifies the region to deploy resources.
-## region = var.aws_region: Uses the aws_region variable defined in variables.tf to set the AWS region.
+### provider "aws": Configures the AWS provider and specifies the region to deploy resources.
+### region = var.aws_region: Uses the aws_region variable defined in variables.tf to set the AWS region.
 
 # variables.tf
 ```hcl
@@ -192,6 +192,22 @@ default: Sets the default key name to your-key-name.
 ### variable "instance_type": Defines the instance type to be used.
 default: Sets the default instance i.e. t2.micro
 
-### variable "ami": Defines the ami(amazon machine image).
+**variable "ami": Defines the ami(amazon machine image)**.
 default: Sets the default Ami value
+
+# vpc.tf
+```hcl
+resource "aws_vpc" "my_vpc" {
+  cidr_block = var.vpc_cidr
+
+  tags = {
+    Name = "my-vpc"
+  }
+}
+```
+
+## Explanation
+**resource "aws_vpc" "my_vpc": Creates a VPC**.
+**cidr_block**: Sets the CIDR block for the VPC using the vpc_cidr variable.
+**tags**: Adds a tag to the VPC with the name "my-vpc".
 
