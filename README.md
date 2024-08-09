@@ -193,5 +193,5 @@ default: Sets the default key name to your-key-name.
 default: Sets the default instance i.e. t2.micro
 
 ## variable "ami": Defines the ami(amazon machine image).
-default: Sets the default Ami value
+default: Sets the default Ami valu
 
